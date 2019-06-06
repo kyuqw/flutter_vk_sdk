@@ -1,8 +1,8 @@
 name: flutter_vk_sdk
 description: Flutter vk sdk project.
-version: 0.0.1
+version: 0.0.3
 author: kyuqw <email>
-homepage: 'https://none'
+homepage: 'https://github.com/kyuqw/flutter_vk_sdk'
 
 environment:
   sdk: ">=2.1.0 <3.0.0"
