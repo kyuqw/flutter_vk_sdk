@@ -7,11 +7,12 @@ enum VKAction: String {
     case login = "login"
     case logout = "logout"
     case getAccessToken = "get_access_token"
+    case isLoggedIn = "is_logged_in"
     case share = "share"
 }
 
 public class SwiftFlutterVkSdkPlugin: NSObject, FlutterPlugin {
-    private let vkScope = [VK_PER_EMAIL, VK_PER_FRIENDS, VK_PER_OFFLINE]
+    private let vkScope = [VK_PER_EMAIL, VK_PER_FRIENDS, VK_PER_OFFLINE, VK_PER_WALL]
     var methodChannelResult: FlutterResult!
     
     public static func register(with registrar: FlutterPluginRegistrar) {
@@ -19,71 +20,72 @@ public class SwiftFlutterVkSdkPlugin: NSObject, FlutterPlugin {
         let instance = SwiftFlutterVkSdkPlugin()
         registrar.addMethodCallDelegate(instance, channel: channel)
     }
+    
     public func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
         switch call.method {
         case VKAction.initialize.rawValue:
-            // TODO : init from flutter?
-            
-//            guard
-//                let appId: String = getArgument("appId", from: input.arguments)
-//                else {
-//                    feedback(.failure("Invalid arguments"), to: output)
-//                    return
-//            }
-//
-//            let apiVersion: String? = getArgument("apiVersion", from: input.arguments)
-//            VKSdk.instance().uiDelegate = self
-//            VKSdk.instance().register(self)
+            guard let vkAppId: String = getArgument("appId", from: call.arguments) else {
+                result(FlutterError(code: "UNAVAILABLE", message: "VK login error", details: nil))
+                return
+            }
+            VKSdk.initialize(withAppId: vkAppId)
+            VKSdk.instance().uiDelegate = self
+            VKSdk.instance().register(self)
+            result(["success": true])
             break
         case VKAction.login.rawValue:
             loginVK(result)
             break
         case VKAction.share.rawValue:
             if VKSdk.isLoggedIn() {
-                shareToVK()
+                if let shareText: String = getArgument("text", from: call.arguments) {
+                    shareToVK(text: shareText)
+                } else {
+                result(FlutterError(code: "UNAVAILABLE", message: "VK share error", details: nil))
+                }
             } else {
-                loginVK(result)
+                result(FlutterError(code: "UNAVAILABLE", message: "VK share error", details: nil))
             }
+            break
+        case VKAction.logout.rawValue:
+            VKSdk.forceLogout()
+            result(["success": true])
+            break
+        case VKAction.isLoggedIn.rawValue:
+            result(VKSdk.isLoggedIn())
             break
         default:
             return result(FlutterMethodNotImplemented)
         }
     }
     
-    func loginVK(_ result: @escaping FlutterResult) {
-        if let vkAppId = Bundle.main.object(forInfoDictionaryKey: "VKAppId") as? String, let sdkInstance = VKSdk.initialize(withAppId: vkAppId) {
-            self.methodChannelResult = result
-            sdkInstance.uiDelegate = self
-            sdkInstance.register(self)
-            VKSdk.wakeUpSession(self.vkScope) { state, error in
-                switch state {
-                case .authorized:
-                    if let token = VKSdk.accessToken() {
-                        self.authorizeVK(with: token)
-                    } else {
-                        result(FlutterError(code: "UNAVAILABLE", message: "VK login error", details: nil))
-                    }
-                    break
-                case .initialized:
-                    VKSdk.authorize(self.vkScope)
-                    break
-                case .error:
-                    result(FlutterError(code: "UNAVAILABLE", message: "VK login error", details: nil))
-                    break
-                default:
-                    break
-                }
-            }
-        } else {
-            result(FlutterError(code: "UNAVAILABLE", message: "VK login error", details: nil))
-        }
+    private func getArgument<T>(_ name: String, from arguments: Any?) -> T? {
+        guard let arguments = arguments as? [String: Any] else { return nil }
+        return arguments[name] as? T
     }
-    
-    func shareToVK() {
-        if let vkAppId = Bundle.main.object(forInfoDictionaryKey: "VKAppId") as? String, let sdkInstance = VKSdk.initialize(withAppId: vkAppId) {
-            sdkInstance.uiDelegate = self
-            sdkInstance.register(self)
-            showVKShareModal()
+}
+
+extension SwiftFlutterVkSdkPlugin: VKSdkDelegate, VKSdkUIDelegate {
+    func loginVK(_ result: @escaping FlutterResult) {
+        self.methodChannelResult = result
+        VKSdk.wakeUpSession(self.vkScope) { state, error in
+            switch state {
+            case .authorized:
+                if let token = VKSdk.accessToken() {
+                    self.authorizeVK(with: token)
+                } else {
+                    result(FlutterError(code: "UNAVAILABLE", message: "VK login error", details: nil))
+                }
+                break
+            case .initialized:
+                VKSdk.authorize(self.vkScope)
+                break
+            case .error:
+                result(FlutterError(code: "UNAVAILABLE", message: "VK login error", details: nil))
+                break
+            default:
+                break
+            }
         }
     }
     
@@ -100,9 +102,29 @@ public class SwiftFlutterVkSdkPlugin: NSObject, FlutterPlugin {
         ]
         methodChannelResult(data)
     }
-}
-
-extension SwiftFlutterVkSdkPlugin: VKSdkDelegate, VKSdkUIDelegate {
+    
+    func shareToVK(text: String) {
+        guard
+            let rootController = UIApplication.shared.keyWindow?.rootViewController else {
+                // TODO: Should dispatch error
+                return
+        }
+        
+        let shareDialog = VKShareDialogController()
+        shareDialog.text = text
+        //        let image = Constants.postcardImages[self.postcard.id]
+        //        if image != "" {
+        //            shareDialog.vkImages = [image]
+        //        }
+        //        shareDialog.shareLink = VKShareLink(title: "Выиграй поездку для своих близких в Тюмень!", link: URL(string: "https://visit-tyumen.ru/postcards"))
+        
+        shareDialog.completionHandler = { controller, result in
+            // print(result.rawValue) //0 - cancel 1 - sent
+            rootController.dismiss(animated: true)
+        }
+        
+        rootController.present(shareDialog, animated: true, completion: nil)
+    }
     public func vkSdkAccessAuthorizationFinished(with result: VKAuthorizationResult!) {
         if result.token != nil {
             self.authorizeVK(with: result.token)
@@ -116,7 +138,7 @@ extension SwiftFlutterVkSdkPlugin: VKSdkDelegate, VKSdkUIDelegate {
     }
     
     public func vkSdkShouldPresent(_ controller: UIViewController!) {
-//        dispatch(.vkSdkShouldPresent)
+        //        dispatch(.vkSdkShouldPresent)
         guard let rootController = UIApplication.shared.keyWindow?.rootViewController else {
             // TODO: Should dispatch error
             return
@@ -125,40 +147,18 @@ extension SwiftFlutterVkSdkPlugin: VKSdkDelegate, VKSdkUIDelegate {
     }
     
     public func vkSdkNeedCaptchaEnter(_ captchaError: VKError!) {
-//        dispatch(.vkSdkNeedCaptchaEnter, payload: [
-//            "error": captchaError.errorMessage,
-//            ])
+        //        dispatch(.vkSdkNeedCaptchaEnter, payload: [
+        //            "error": captchaError.errorMessage,
+        //            ])
         
         guard
             let rootController = UIApplication.shared.keyWindow?.rootViewController,
             let controller = VKCaptchaViewController.captchaControllerWithError(captchaError) else {
-                // TODO: Should dispatch error
                 return
         }
         
         rootController.present(controller, animated: true)
     }
     
-    func showVKShareModal() {
-        guard
-            let rootController = UIApplication.shared.keyWindow?.rootViewController else {
-                // TODO: Should dispatch error
-                return
-        }
-        
-        let shareDialog = VKShareDialogController()
-        shareDialog.text = "Я участник форума #YTPO2019"
-//        let image = Constants.postcardImages[self.postcard.id]
-//        if image != "" {
-//            shareDialog.vkImages = [image]
-//        }
-//        shareDialog.shareLink = VKShareLink(title: "Выиграй поездку для своих близких в Тюмень!", link: URL(string: "https://visit-tyumen.ru/postcards"))
-        
-        shareDialog.completionHandler = { controller, result in
-            // print(result.rawValue) //0 - cancel 1 - sent
-            rootController.dismiss(animated: true)
-        }
-        
-        rootController.present(shareDialog, animated: true, completion: nil)
-    }
 }
+

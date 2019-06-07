@@ -10,6 +10,14 @@ class FlutterVkSdk {
     return items?.cast<String, dynamic>();
   }
 
+  static Future<Map> init({String appId, String scope}) async {
+    final Map init = await _channel.invokeMethod('initialize', {
+      'appId': appId,
+      'scope': scope,
+    });
+    return init;
+  }
+
   static Future login({
     String scope,
     @required Function(Map<String, dynamic>) onSuccess,
@@ -48,5 +56,9 @@ class FlutterVkSdk {
     } on PlatformException catch (e) {
       onError(e);
     }
+  }
+
+  static Future<bool> isLoggedIn() async {
+    return await _channel.invokeMethod<bool>('is_logged_in');
   }
 }
