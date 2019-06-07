@@ -18,7 +18,7 @@ class _MyAppState extends State<MyApp> {
   }
 
   checkLoggedIn() async {
-    await FlutterVkSdk.init(appId: '7012114');
+    await FlutterVkSdk.init(appId: '5555555');
     var isLoggedIn = await FlutterVkSdk.isLoggedIn();
     setState(() {
       _value = isLoggedIn.toString();
@@ -26,7 +26,7 @@ class _MyAppState extends State<MyApp> {
   }
 
   void vkLogin() async {
-    var i = await FlutterVkSdk.init(appId: '7012114');
+    var i = await FlutterVkSdk.init(appId: '5555555');
     FlutterVkSdk.login(
       onSuccess: (res) {
         setState(() {
@@ -42,7 +42,7 @@ class _MyAppState extends State<MyApp> {
   }
 
   vkShare() async {
-    var i = await FlutterVkSdk.init(appId: '7012114');
+    var i = await FlutterVkSdk.init(appId: '5555555');
     print(i);
     FlutterVkSdk.share(
       text: "Я участник форума #YTPO2019",

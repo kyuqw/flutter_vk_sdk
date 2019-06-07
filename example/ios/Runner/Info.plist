@@ -2,8 +2,6 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<key>VKAppId</key>
-	<string>7012114</string>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>en</string>
 	<key>CFBundleExecutable</key>
@@ -70,10 +68,10 @@
             <key>CFBundleTypeRole</key>
             <string>Editor</string>
             <key>CFBundleURLName</key>
-            <string>vk7012114</string>
+            <string>vk5555555</string>
             <key>CFBundleURLSchemes</key>
             <array>
-                <string>vk7012114</string>
+                <string>vk5555555</string>
             </array>
         </dict>
     </array>
