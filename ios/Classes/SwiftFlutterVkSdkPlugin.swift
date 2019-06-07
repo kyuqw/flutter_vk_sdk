@@ -127,8 +127,7 @@ extension SwiftFlutterVkSdkPlugin: VKSdkDelegate, VKSdkUIDelegate {
             default:
                 result(FlutterError(code: "UNAVAILABLE", message: "VK share error", details: nil))
             }
-//            rootController.dismiss(animated: true)
-            
+            rootController.dismiss(animated: true)
         }
         
         rootController.present(shareDialog, animated: true, completion: nil)
