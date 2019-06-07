@@ -96,7 +96,7 @@ class FlutterVkSdkDelegate constructor(val registrar: PluginRegistry.Registrar) 
       builder.setShareDialogListener(object : VKShareDialog.VKShareDialogListener {
         override fun onVkShareComplete(postId: Int) {
           // recycle bitmap if need
-          finishWithResult(postId)
+          finishWithResult(postId.toString()) // TODO: add owner id to result response
         }
 
         override fun onVkShareCancel() {

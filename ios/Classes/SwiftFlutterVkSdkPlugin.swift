@@ -39,9 +39,9 @@ public class SwiftFlutterVkSdkPlugin: NSObject, FlutterPlugin {
         case VKAction.share.rawValue:
             if VKSdk.isLoggedIn() {
                 if let shareText: String = getArgument("text", from: call.arguments) {
-                    shareToVK(text: shareText)
+                    shareToVK(text: shareText, result: result)
                 } else {
-                result(FlutterError(code: "UNAVAILABLE", message: "VK share error", details: nil))
+                    result(FlutterError(code: "UNAVAILABLE", message: "VK share error", details: nil))
                 }
             } else {
                 result(FlutterError(code: "UNAVAILABLE", message: "VK share error", details: nil))
@@ -103,7 +103,7 @@ extension SwiftFlutterVkSdkPlugin: VKSdkDelegate, VKSdkUIDelegate {
         methodChannelResult(data)
     }
     
-    func shareToVK(text: String) {
+    func shareToVK(text: String, result: @escaping FlutterResult) {
         guard
             let rootController = UIApplication.shared.keyWindow?.rootViewController else {
                 // TODO: Should dispatch error
@@ -118,9 +118,17 @@ extension SwiftFlutterVkSdkPlugin: VKSdkDelegate, VKSdkUIDelegate {
         //        }
         //        shareDialog.shareLink = VKShareLink(title: "Выиграй поездку для своих близких в Тюмень!", link: URL(string: "https://visit-tyumen.ru/postcards"))
         
-        shareDialog.completionHandler = { controller, result in
-            // print(result.rawValue) //0 - cancel 1 - sent
-            rootController.dismiss(animated: true)
+        shareDialog.completionHandler = { controller, _result in
+            switch _result {
+            case VKShareDialogControllerResult.cancelled:
+                result(FlutterError(code: "UNAVAILABLE", message: "VK share error", details: nil))
+            case VKShareDialogControllerResult.done:
+                result(controller?.postId)
+            default:
+                result(FlutterError(code: "UNAVAILABLE", message: "VK share error", details: nil))
+            }
+//            rootController.dismiss(animated: true)
+            
         }
         
         rootController.present(shareDialog, animated: true, completion: nil)

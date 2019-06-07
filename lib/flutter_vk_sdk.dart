@@ -44,7 +44,7 @@ class FlutterVkSdk {
 
   static void share({
     String text,
-    @required Function(int) onSuccess,
+    @required Function(String) onSuccess,
     @required Function(PlatformException) onError,
     String loginScope,
   }) async {
