@@ -1,20 +1,20 @@
 import 'dart:async';
 import 'package:flutter/services.dart';
-
 import 'package:flutter/material.dart';
+
+import 'package:flutter_vk_sdk/vk_scope.dart';
 
 class FlutterVkSdk {
   static const MethodChannel _channel = const MethodChannel('com.fb.fluttervksdk/vk');
+  static final String _defaultScope = '${VkScope.email}, ${VkScope.notifications}';
 
   static Map<String, dynamic> _cast(Map items) {
     return items?.cast<String, dynamic>();
   }
 
-  static Future<Map> init({String appId, String scope}) async {
-    final Map init = await _channel.invokeMethod('initialize', {
-      'appId': appId,
-      'scope': scope,
-    });
+  static Future<Map> init({String appId, String apiVersion}) async {
+    // TODO apiVersion for iOS
+    final Map init = await _channel.invokeMethod('initialize', {'app_id': appId, 'api_verson': apiVersion});
     return init;
   }
 
@@ -26,6 +26,7 @@ class FlutterVkSdk {
     assert(onSuccess != null);
     assert(onError != null);
     try {
+      if (scope == null || scope.isEmpty) scope = _defaultScope;
       final Map login = await _channel.invokeMethod('login', {'scope': scope});
       onSuccess(_cast(login));
     } on PlatformException catch (e) {
@@ -46,12 +47,11 @@ class FlutterVkSdk {
     String text,
     @required Function(String) onSuccess,
     @required Function(PlatformException) onError,
-    String loginScope,
   }) async {
     assert(onSuccess != null);
     assert(onError != null);
     try {
-      final postId = await _channel.invokeMethod('share', {'text': text, 'scope': loginScope});
+      final postId = await _channel.invokeMethod('share', {'text': text});
       onSuccess(postId);
     } on PlatformException catch (e) {
       onError(e);

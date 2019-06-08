@@ -1,7 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_vk_sdk/flutter_vk_sdk.dart';
 
-void main() => runApp(MyApp());
+void main() {
+  initVkSdk();
+  runApp(MyApp());
+}
+
+initVkSdk() async {
+  return await FlutterVkSdk.init(appId: '5555555');
+}
 
 class MyApp extends StatefulWidget {
   @override
@@ -14,11 +21,9 @@ class _MyAppState extends State<MyApp> {
   @override
   void initState() {
     super.initState();
-    checkLoggedIn();
   }
 
   checkLoggedIn() async {
-    await FlutterVkSdk.init(appId: '5555555');
     var isLoggedIn = await FlutterVkSdk.isLoggedIn();
     setState(() {
       _value = isLoggedIn.toString();
@@ -26,7 +31,6 @@ class _MyAppState extends State<MyApp> {
   }
 
   void vkLogin() async {
-    var i = await FlutterVkSdk.init(appId: '5555555');
     FlutterVkSdk.login(
       onSuccess: (res) {
         setState(() {

@@ -54,6 +54,10 @@ class FlutterVkSdkDelegate constructor(val registrar: PluginRegistry.Registrar) 
     return VKSdk.onActivityResult(requestCode, resultCode, data, loginCallback!!)
   }
 
+  fun initialize(appId: Int, apiVersion: String): VKSdk {
+    return VKSdk.customInitialize(registrar.context(), appId, apiVersion)
+  }
+
   fun isLoggedIn(): Boolean {
     return VKSdk.isLoggedIn()
   }
@@ -77,11 +81,15 @@ class FlutterVkSdkDelegate constructor(val registrar: PluginRegistry.Registrar) 
     result.success(null)
   }
 
+  fun isLoggedIn(result: MethodChannel.Result) {
+    result.success(isLoggedIn())
+  }
+
   fun getCurrentAccessToken(result: MethodChannel.Result) {
     result.success(FlutterVkResults.accessToken(VKAccessToken.currentToken()))
   }
 
-  fun share(text: String?, scope: String, result: MethodChannel.Result) {
+  fun share(text: String?, result: MethodChannel.Result) {
     setPendingResult(FlutterVkSdkPlugin.SHARE_ACTION, result)
     if (isLoggedIn()) {
       val builder = VKShareDialogBuilder()
@@ -111,17 +119,7 @@ class FlutterVkSdkDelegate constructor(val registrar: PluginRegistry.Registrar) 
       })
       builder.show(registrar.activity().fragmentManager, "VK_SHARE_DIALOG")
     } else {
-      loginCallback = object : VKCallback<VKAccessToken> {
-        override fun onResult(res: VKAccessToken) {
-          clearPending()
-          share(text, scope, result)
-        }
-
-        override fun onError(error: VKError) {
-          finishWithError(LOGIN_ERROR_CODE, error.errorMessage, FlutterVkResults.error(error))
-        }
-      }
-      VKSdk.login(registrar.activity(), scope)
+      finishWithError("ShareError", "NeedLogin", null)
     }
   }
 }

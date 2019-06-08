@@ -24,7 +24,7 @@ public class SwiftFlutterVkSdkPlugin: NSObject, FlutterPlugin {
     public func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
         switch call.method {
         case VKAction.initialize.rawValue:
-            guard let vkAppId: String = getArgument("appId", from: call.arguments) else {
+            guard let vkAppId: String = getArgument("app_id", from: call.arguments) else {
                 result(FlutterError(code: "UNAVAILABLE", message: "VK login error", details: nil))
                 return
             }
