@@ -1,7 +1,9 @@
 name: flutter_vk_sdk
 description: Flutter vk sdk project.
 version: 0.0.4+4
-author: kyuqw <email>
+authors:
+- kyuqw <kworkadr@gmail.com>
+- qqmikey <qqmikey@gmail.com>
 homepage: 'https://github.com/kyuqw/flutter_vk_sdk'
 
 environment:

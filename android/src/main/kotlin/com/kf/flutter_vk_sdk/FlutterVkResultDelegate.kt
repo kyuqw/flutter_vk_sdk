@@ -1,6 +1,7 @@
 package com.kf.flutter_vk_sdk
 
 import android.content.Intent
+import android.util.Log
 
 import io.flutter.plugin.common.MethodChannel
 import io.flutter.plugin.common.PluginRegistry
@@ -17,22 +18,35 @@ class FlutterVkSdkDelegate constructor(val registrar: PluginRegistry.Registrar) 
   private var pendingResult: MethodChannel.Result? = null
 
   companion object {
-    const val LOGIN_ERROR_CODE: String = "LoginError"
+    const val UNKNOWN_METHOD: String = "UNKNOWN"
+    const val NEED_LOGIN_ERROR_MSG: String = "NEED_LOGIN"
   }
 
   init {
     registrar.addActivityResultListener(this)
   }
 
-  fun setPendingResult(methodName: String, result: MethodChannel.Result) {
+  fun setPendingResult(methodName: String, result: MethodChannel.Result): Boolean {
     if (pendingResult != null) {
-      result.error(
-          "ProgressError",
-          methodName + " called while another VK operation was in progress.",
-          null
-      )
+      val message = "$methodName called while another VK operation was in progress."
+      Log.d("VK DELEGATE", "_______________________CONFLICT ERROR: ${message}")
+      result.error(getErrorCode("conflict"), message, null)
+      return false
     }
     pendingResult = result
+    return true
+  }
+
+  private fun getErrorCode(methodName: String): String {
+    var name = methodName
+    if (name.isEmpty()) name = UNKNOWN_METHOD
+    return "${name.toLowerCase()}_error"
+  }
+
+  private fun getCanceledCode(methodName: String): String {
+    var name = methodName
+    if (name.isEmpty()) name = UNKNOWN_METHOD
+    return "${name.toLowerCase()}_canceled"
   }
 
   private fun clearPending() {
@@ -41,16 +55,19 @@ class FlutterVkSdkDelegate constructor(val registrar: PluginRegistry.Registrar) 
   }
 
   private fun finishWithResult(result: Any?) {
+    Log.d("VK DELEGATE", "_______________________SET RESULT: ${result}")
     pendingResult?.success(result)
     clearPending()
   }
 
   private fun finishWithError(code: String?, message: String?, detail: Any?) {
+    Log.d("VK DELEGATE", "_______________________SET ERROR: ${code} ${message} ${detail}")
     pendingResult?.error(code, message, detail)
     clearPending()
   }
 
   override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?): Boolean {
+    if (loginCallback == null) return false
     return VKSdk.onActivityResult(requestCode, resultCode, data, loginCallback!!)
   }
 
@@ -63,14 +80,15 @@ class FlutterVkSdkDelegate constructor(val registrar: PluginRegistry.Registrar) 
   }
 
   fun login(scope: String, result: MethodChannel.Result) {
-    setPendingResult(FlutterVkSdkPlugin.LOGIN_ACTION, result)
+    val methodName = FlutterVkSdkPlugin.LOGIN_ACTION
+    if (!setPendingResult(methodName, result)) return
     loginCallback = object : VKCallback<VKAccessToken> {
       override fun onResult(res: VKAccessToken) {
         finishWithResult(FlutterVkResults.successLogin(res))
       }
 
       override fun onError(error: VKError) {
-        finishWithError(LOGIN_ERROR_CODE, error.errorMessage, FlutterVkResults.error(error))
+        finishWithError(getErrorCode(methodName), error.errorMessage, FlutterVkResults.error(error))
       }
     }
     VKSdk.login(registrar.activity(), scope)
@@ -90,7 +108,8 @@ class FlutterVkSdkDelegate constructor(val registrar: PluginRegistry.Registrar) 
   }
 
   fun share(text: String?, result: MethodChannel.Result) {
-    setPendingResult(FlutterVkSdkPlugin.SHARE_ACTION, result)
+    val methodName = FlutterVkSdkPlugin.SHARE_ACTION
+    if (!setPendingResult(methodName, result)) return
     if (isLoggedIn()) {
       val builder = VKShareDialogBuilder()
       if (!text.isNullOrEmpty()) builder.setText(text)
@@ -109,17 +128,21 @@ class FlutterVkSdkDelegate constructor(val registrar: PluginRegistry.Registrar) 
 
         override fun onVkShareCancel() {
           // recycle bitmap if need
-          finishWithError(null, null, null)
+          finishWithError(getCanceledCode(methodName), null, null)
         }
 
         override fun onVkShareError(error: VKError) {
           // recycle bitmap if need
-          finishWithError("ShareError", error.errorMessage, FlutterVkResults.error(error))
+          finishWithError(getErrorCode(methodName), error.errorMessage, FlutterVkResults.error(error))
         }
       })
-      builder.show(registrar.activity().fragmentManager, "VK_SHARE_DIALOG")
+      val fragmentManager = registrar.activity().fragmentManager
+      fragmentManager.addOnBackStackChangedListener {
+        finishWithError(getCanceledCode(methodName), null, null)
+      }
+      builder.show(fragmentManager, "VK_SHARE_DIALOG")
     } else {
-      finishWithError("ShareError", "NeedLogin", null)
+      finishWithError(getErrorCode(methodName), NEED_LOGIN_ERROR_MSG, null)
     }
   }
 }
@@ -128,7 +151,7 @@ object FlutterVkResults {
   val cancelled: Map<String, String> = mapOf("status" to "cancelled")
 
   fun successLogin(token: VKAccessToken): Map<String, Any?> {
-    val accessTokenMap = FlutterVkResults.accessToken(token)
+    val accessTokenMap = accessToken(token)
 
     return mapOf(
         "status" to "loggedIn",
@@ -152,12 +175,12 @@ object FlutterVkResults {
   fun accessToken(accessToken: VKAccessToken?): Map<String, Any>? {
     if (accessToken == null) return null
     return mapOf(
-        "token" to accessToken!!.accessToken,
-        "userId" to accessToken!!.userId,
-        "expiresIn" to accessToken!!.expiresIn,
-        "secret" to accessToken!!.secret,
-        "email" to accessToken!!.email,
-        "scope" to accessToken!!.hasScope()
+        "token" to accessToken.accessToken,
+        "userId" to accessToken.userId,
+        "expiresIn" to accessToken.expiresIn,
+        "secret" to accessToken.secret,
+        "email" to accessToken.email,
+        "scope" to accessToken.hasScope()
     )
   }
 }

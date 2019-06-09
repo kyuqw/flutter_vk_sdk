@@ -3,11 +3,11 @@ import 'package:flutter_vk_sdk/flutter_vk_sdk.dart';
 
 void main() {
   initVkSdk();
-  runApp(MyApp());
+  runApp(MaterialApp(home: MyApp()));
 }
 
-initVkSdk() async {
-  return await FlutterVkSdk.init(appId: '5555555');
+initVkSdk() {
+  return FlutterVkSdk.init(appId: '5555555');
 }
 
 class MyApp extends StatefulWidget {
@@ -38,6 +38,7 @@ class _MyAppState extends State<MyApp> {
         });
       },
       onError: (error) {
+        print('LOGIN ERROR: $error}');
         setState(() {
           _value = 'error';
         });
@@ -46,10 +47,8 @@ class _MyAppState extends State<MyApp> {
   }
 
   vkShare() async {
-    var i = await FlutterVkSdk.init(appId: '5555555');
-    print(i);
     FlutterVkSdk.share(
-      text: "Я участник форума #YTPO2019",
+      text: 'Some post text.\n#HASHTAG',
       onSuccess: (res) {
         print('SUCCESS: $res}');
         setState(() {
@@ -57,7 +56,7 @@ class _MyAppState extends State<MyApp> {
         });
       },
       onError: (error) {
-        print('ERROR: $error}');
+        print('SHARE ERROR: $error}');
         setState(() {
           _value = 'error';
         });
