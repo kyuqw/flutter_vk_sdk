@@ -6,20 +6,20 @@ import android.util.Log
 import io.flutter.plugin.common.MethodChannel
 import io.flutter.plugin.common.PluginRegistry
 
-import com.vk.sdk.api.VKError
-import com.vk.sdk.dialogs.VKShareDialogBuilder
-import com.vk.sdk.dialogs.VKShareDialog
-import com.vk.sdk.VKAccessToken
-import com.vk.sdk.VKCallback
-import com.vk.sdk.VKSdk
+import com.vk.api.sdk.auth.VKAccessToken
+import com.vk.api.sdk.auth.VKAuthCallback
+import com.vk.api.sdk.auth.VKScope
+import com.vk.api.sdk.VKApiConfig
+import com.vk.api.sdk.exceptions.VKApiExecutionException
+import com.vk.api.sdk.VK
 
 class FlutterVkSdkDelegate constructor(val registrar: PluginRegistry.Registrar) : PluginRegistry.ActivityResultListener {
-  private var loginCallback: VKCallback<VKAccessToken>? = null
+  private var loginCallback: VKAuthCallback? = null
   private var pendingResult: MethodChannel.Result? = null
 
   companion object {
-    const val UNKNOWN_METHOD: String = "UNKNOWN"
     const val NEED_LOGIN_ERROR_MSG: String = "NEED_LOGIN"
+    val defaultScope: Collection<VKScope> = emptySet()
   }
 
   init {
@@ -38,15 +38,11 @@ class FlutterVkSdkDelegate constructor(val registrar: PluginRegistry.Registrar) 
   }
 
   private fun getErrorCode(methodName: String): String {
-    var name = methodName
-    if (name.isEmpty()) name = UNKNOWN_METHOD
-    return "${name.toLowerCase()}_error"
+    return FlutterVkResults.getErrorCode(methodName)
   }
 
   private fun getCanceledCode(methodName: String): String {
-    var name = methodName
-    if (name.isEmpty()) name = UNKNOWN_METHOD
-    return "${name.toLowerCase()}_canceled"
+    return FlutterVkResults.getCanceledCode(methodName)
   }
 
   private fun clearPending() {
@@ -66,89 +62,80 @@ class FlutterVkSdkDelegate constructor(val registrar: PluginRegistry.Registrar) 
     clearPending()
   }
 
+  fun scopesFromString(scopesStr: String?): Collection<VKScope> {
+    if (scopesStr == null) return defaultScope
+    val arr = scopesStr.split(",")
+    val scopes = arr.map {
+      val s = it.trim()
+      VKScope.valueOf(s.toUpperCase())
+    }
+    return scopes
+  }
+
   override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?): Boolean {
     if (loginCallback == null) return false
-    return VKSdk.onActivityResult(requestCode, resultCode, data, loginCallback!!)
+    return VK.onActivityResult(requestCode, resultCode, data, loginCallback!!)
   }
 
-  fun initialize(appId: Int, apiVersion: String): VKSdk {
-    return VKSdk.customInitialize(registrar.context(), appId, apiVersion)
-  }
+//  fun initialize(appId: Int, apiVersion: String) {
+//    if (appId == 0) {
+//      throw RuntimeException("<integer name=\"com_vk_sdk_AppId\">your_app_id</integer> is not found in your resources.xml")
+//    }
+//
+//    val context = registrar.context()
+//    VK.setConfig(VKApiConfig(
+//        context = context,
+//        appId = appId,
+//        version = apiVersion,
+//        validationHandler = VKDefaultValidationHandler(context))
+//    )
+//  }
 
   fun isLoggedIn(): Boolean {
-    return VKSdk.isLoggedIn()
+    return VK.isLoggedIn()
   }
 
-  fun login(scope: String, result: MethodChannel.Result) {
+  fun login(scopes: String?, result: MethodChannel.Result) {
+    val scopeCollection = scopesFromString(scopes)
     val methodName = FlutterVkSdkPlugin.LOGIN_ACTION
     if (!setPendingResult(methodName, result)) return
-    loginCallback = object : VKCallback<VKAccessToken> {
-      override fun onResult(res: VKAccessToken) {
-        finishWithResult(FlutterVkResults.successLogin(res))
+    loginCallback = object : VKAuthCallback {
+      override fun onLogin(token: VKAccessToken) {
+        finishWithResult(FlutterVkResults.successLogin(token))
       }
 
-      override fun onError(error: VKError) {
-        finishWithError(getErrorCode(methodName), error.errorMessage, FlutterVkResults.error(error))
+      override fun onLoginFailed(errorCode: Int) {
+        val code = if (errorCode == VKAuthCallback.AUTH_CANCELED) getCanceledCode(methodName) else getErrorCode(methodName)
+        finishWithError(code, null, null)
       }
     }
-    VKSdk.login(registrar.activity(), scope)
+    VK.login(registrar.activity(), scopeCollection)
   }
 
   fun logout(result: MethodChannel.Result) {
-    VKSdk.logout()
+    VK.logout()
     result.success(null)
   }
 
   fun isLoggedIn(result: MethodChannel.Result) {
     result.success(isLoggedIn())
   }
-
-  fun getCurrentAccessToken(result: MethodChannel.Result) {
-    result.success(FlutterVkResults.accessToken(VKAccessToken.currentToken()))
-  }
-
-  fun share(text: String?, result: MethodChannel.Result) {
-    val methodName = FlutterVkSdkPlugin.SHARE_ACTION
-    if (!setPendingResult(methodName, result)) return
-    if (isLoggedIn()) {
-      val builder = VKShareDialogBuilder()
-      if (!text.isNullOrEmpty()) builder.setText(text)
-
-//      if (!it.isEmpty()) {
-//        val photos = VKPhotoArray()
-//        photos.add(VKApiPhoto(it))
-//        builder.setUploadedPhotos(photos)
-//      }
-//      builder.setAttachmentLink(title, url)
-      builder.setShareDialogListener(object : VKShareDialog.VKShareDialogListener {
-        override fun onVkShareComplete(postId: Int) {
-          // recycle bitmap if need
-          finishWithResult(postId.toString()) // TODO: add owner id to result response
-        }
-
-        override fun onVkShareCancel() {
-          // recycle bitmap if need
-          finishWithError(getCanceledCode(methodName), null, null)
-        }
-
-        override fun onVkShareError(error: VKError) {
-          // recycle bitmap if need
-          finishWithError(getErrorCode(methodName), error.errorMessage, FlutterVkResults.error(error))
-        }
-      })
-      val fragmentManager = registrar.activity().fragmentManager
-      fragmentManager.addOnBackStackChangedListener {
-        finishWithError(getCanceledCode(methodName), null, null)
-      }
-      builder.show(fragmentManager, "VK_SHARE_DIALOG")
-    } else {
-      finishWithError(getErrorCode(methodName), NEED_LOGIN_ERROR_MSG, null)
-    }
-  }
 }
 
 object FlutterVkResults {
-  val cancelled: Map<String, String> = mapOf("status" to "cancelled")
+  private const val UNKNOWN_METHOD: String = "UNKNOWN"
+
+  fun getErrorCode(methodName: String): String {
+    var name = methodName
+    if (name.isEmpty()) name = UNKNOWN_METHOD
+    return "${name.toLowerCase()}_error"
+  }
+
+  fun getCanceledCode(methodName: String): String {
+    var name = methodName
+    if (name.isEmpty()) name = UNKNOWN_METHOD
+    return "${name.toLowerCase()}_canceled"
+  }
 
   fun successLogin(token: VKAccessToken): Map<String, Any?> {
     val accessTokenMap = accessToken(token)
@@ -159,28 +146,42 @@ object FlutterVkResults {
     )
   }
 
-  fun error(error: VKError): Map<String, String>? {
-    when (error.errorCode) {
-      VKError.VK_API_ERROR -> return mapOf(
-          "status" to "error",
-          "errorMessage" to error.errorMessage,
-          "errorReason" to error.errorReason
-      )
-
-      VKError.VK_CANCELED -> return cancelled
-    }
-    return null
+  fun error(error: VKApiExecutionException): Map<String, Any?> {
+    val res = HashMap<String, Any?>()
+    res["code"] = error.code
+    res["apiMethod"] = error.apiMethod
+    res["hasLocalizedMessage"] = error.hasLocalizedMessage
+    res["errorMsg"] = error.errorMsg
+    res["detailMessage"] = error.message
+    if (error.extra != null) res["extra"] = error.extra.toString()
+    if (error.executeErrors != null)
+      res["executeErrors"] = error.executeErrors?.map { error(it) }?.joinToString(prefix = "[", postfix = "]")
+    return res
   }
 
-  fun accessToken(accessToken: VKAccessToken?): Map<String, Any>? {
-    if (accessToken == null) return null
+//  fun error(error: VKError?): Map<String, String>? {
+//    if (error == null) return null
+//    when (error.errorCode) {
+//      VKError.VK_API_ERROR -> return mapOf(
+//          "status" to "error",
+//          "errorMessage" to error.errorMessage,
+//          "errorReason" to error.errorReason
+//      )
+//
+////      VKError.VK_CANCELED -> return null
+//    }
+//    return null
+//  }
+
+  fun accessToken(token: VKAccessToken): Map<String, Any?> {
     return mapOf(
-        "token" to accessToken.accessToken,
-        "userId" to accessToken.userId,
-        "expiresIn" to accessToken.expiresIn,
-        "secret" to accessToken.secret,
-        "email" to accessToken.email,
-        "scope" to accessToken.hasScope()
+        "token" to token.accessToken,
+        "userId" to token.userId,
+        "secret" to token.secret,
+        "email" to token.email,
+        "phone" to token.phone,
+        "phoneAccessKey" to token.phoneAccessKey,
+        "created" to token.created.toString()
     )
   }
 }

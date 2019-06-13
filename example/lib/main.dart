@@ -1,5 +1,9 @@
+import 'package:file_picker/file_picker.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_vk_sdk/flutter_vk_sdk.dart';
+import 'package:flutter_vk_sdk/models/attachment.dart';
+import 'package:flutter_vk_sdk/vk_scope.dart';
 
 void main() {
   initVkSdk();
@@ -32,6 +36,7 @@ class _MyAppState extends State<MyApp> {
 
   void vkLogin() async {
     FlutterVkSdk.login(
+      scope: '${VkScope.wall}, ${VkScope.photos}',
       onSuccess: (res) {
         setState(() {
           _value = 'true';
@@ -47,44 +52,63 @@ class _MyAppState extends State<MyApp> {
   }
 
   vkShare() async {
-    FlutterVkSdk.share(
+    FlutterVkSdk.shareWithDialog(
+      context: context,
       text: 'Some post text.\n#HASHTAG',
-      onSuccess: (res) {
-        print('SUCCESS: $res}');
-        setState(() {
-          _value = 'true';
-        });
-      },
-      onError: (error) {
-        print('SHARE ERROR: $error}');
-        setState(() {
-          _value = 'error';
-        });
-      },
+      addAttachments: addAttachments,
+      onSuccess: handleShareSuccess,
+      onError: handleShareError,
     );
+  }
+
+  Future<List<String>> addAttachments(AttachmentType type) async {
+    var pickingType;
+    switch (type) {
+      case AttachmentType.photo:
+        pickingType = FileType.IMAGE;
+        break;
+      case AttachmentType.url:
+        break;
+    }
+    if (pickingType == null) return null;
+    final paths = await FilePicker.getMultiFilePath(type: pickingType);
+    if (paths == null) return null;
+    return paths.values.toList();
   }
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      home: Scaffold(
-        appBar: AppBar(
-          title: const Text('Plugin example app'),
-          leading: FlatButton(
-            onPressed: vkLogin,
-            child: Icon(Icons.input),
-          ),
-          actions: <Widget>[
-            FlatButton(
-              onPressed: vkShare,
-              child: Icon(Icons.share),
-            )
-          ],
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Plugin example app'),
+        leading: FlatButton(
+          onPressed: vkLogin,
+          child: Icon(Icons.input),
         ),
-        body: Center(
-          child: Text('LoggedIn: $_value\n'),
-        ),
+        actions: <Widget>[
+          FlatButton(
+            onPressed: vkShare,
+            child: Icon(Icons.share),
+          )
+        ],
+      ),
+      body: Center(
+        child: Text('LoggedIn: $_value\n'),
       ),
     );
+  }
+
+  handleShareSuccess(res) {
+    print('SUCCESS: $res}');
+    setState(() {
+      _value = 'true';
+    });
+  }
+
+  handleShareError(error) {
+    print('SHARE ERROR: $error}');
+    setState(() {
+      _value = 'error';
+    });
   }
 }

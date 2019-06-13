@@ -8,15 +8,15 @@ import io.flutter.plugin.common.MethodChannel.MethodCallHandler
 import io.flutter.plugin.common.MethodChannel.Result
 import io.flutter.plugin.common.PluginRegistry.Registrar
 
-import com.vk.sdk.VKScope
-
 class FlutterVkSdkPlugin : MethodCallHandler {
 
   private var delegate: FlutterVkSdkDelegate
+  private var apiDelegate: FlutterVkApiDelegate
 
   constructor(registrar: Registrar) {
     Log.d("VK PLUGIN", "_________________________CALL CONSTRUCTOR")
     delegate = FlutterVkSdkDelegate(registrar)
+    apiDelegate = FlutterVkApiDelegate()
   }
 
   companion object {
@@ -29,10 +29,8 @@ class FlutterVkSdkPlugin : MethodCallHandler {
     const val IS_LOGGED_IN_ACTION: String = "is_logged_in"
     const val LOGIN_ACTION: String = "login"
     const val LOGOUT_ACTION: String = "logout"
-    const val GET_ACCESS_TOKEN_ACTION: String = "get_access_token"
-    const val SHARE_ACTION: String = "share"
-
-    const val defaultScope: String = "${VKScope.EMAIL}, ${VKScope.NOTIFICATIONS}"
+    const val API_ACTION: String = "api_method_call"
+    const val POST_ACTION: String = "post_method_call"
 
     @JvmStatic
     fun registerWith(registrar: Registrar) {
@@ -44,15 +42,15 @@ class FlutterVkSdkPlugin : MethodCallHandler {
   override fun onMethodCall(call: MethodCall, result: Result) {
     Log.d("VK PLUGIN", "_________________________CALL METHOD: ${call.method}")
     when (call.method) {
-      INITIALIZE_ACTION -> {
-        val appIdArg: String? = call.argument(APP_ID_ARGUMENT)
-        val appId = appIdArg?.toInt() ?: 0
-        val apiVersion: String = call.argument(API_VERSION_ARGUMENT) ?: ""
-        delegate.initialize(appId, apiVersion)
-        result.success(null)
-      }
+//      INITIALIZE_ACTION -> {
+//        val appIdArg: String? = call.argument(APP_ID_ARGUMENT)
+//        val appId = appIdArg?.toInt() ?: 0
+//        val apiVersion: String = call.argument(API_VERSION_ARGUMENT) ?: ""
+//        delegate.initialize(appId, apiVersion)
+//        result.success(null)
+//      }
       LOGIN_ACTION -> {
-        val scope: String = call.argument(SCOPE_ARGUMENT) ?: defaultScope
+        val scope: String? = call.argument(SCOPE_ARGUMENT)
         delegate.login(scope, result)
       }
       LOGOUT_ACTION -> {
@@ -61,12 +59,13 @@ class FlutterVkSdkPlugin : MethodCallHandler {
       IS_LOGGED_IN_ACTION -> {
         delegate.isLoggedIn(result)
       }
-      GET_ACCESS_TOKEN_ACTION -> {
-        delegate.getCurrentAccessToken(result)
+      API_ACTION -> {
+        val arguments = call.arguments<Map<String, Any?>>()
+        apiDelegate.apiMethodCall(arguments, result)
       }
-      SHARE_ACTION -> {
-        val text: String? = call.argument("text")
-        delegate.share(text, result)
+      POST_ACTION -> {
+        val arguments = call.arguments<Map<String, Any?>>()
+        apiDelegate.postMethodCall(arguments, result)
       }
       else -> {
         result.notImplemented()
