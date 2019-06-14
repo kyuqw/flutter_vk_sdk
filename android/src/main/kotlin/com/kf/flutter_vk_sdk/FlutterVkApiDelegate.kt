@@ -51,7 +51,7 @@ class FlutterVkApiDelegate {
     return arguments.map {
       val value = it.value.toString()
       if (value.startsWith("file:///")) Pair(it.key, Uri.parse(value))
-      Pair(it.key, value)
+      else Pair(it.key, value)
     }.toMap()
   }
 
