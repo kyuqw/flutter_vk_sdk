@@ -101,8 +101,7 @@ class PhotoUploader {
   }
 
   String getFileUri(String source) {
-    source = source?.toLowerCase();
-    if (source == null || source.startsWith('file:///')) return source;
+    if (source == null || source.toLowerCase().startsWith('file:///')) return source;
     return Uri.file(source).toString();
   }
 }

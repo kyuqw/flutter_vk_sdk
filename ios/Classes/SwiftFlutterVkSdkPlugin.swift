@@ -9,6 +9,8 @@ enum VKAction: String {
     case getAccessToken = "get_access_token"
     case isLoggedIn = "is_logged_in"
     case share = "share"
+    case apiCall = "api_method_call"
+    case postCall = "post_method_call"
 }
 
 public class SwiftFlutterVkSdkPlugin: NSObject, FlutterPlugin {
@@ -34,7 +36,7 @@ public class SwiftFlutterVkSdkPlugin: NSObject, FlutterPlugin {
             result(["success": true])
             break
         case VKAction.login.rawValue:
-            loginVK(result)
+            loginVK(result, scope: getArgument("scope", from: call.arguments))
             break
         case VKAction.share.rawValue:
             if VKSdk.isLoggedIn() {
@@ -54,6 +56,12 @@ public class SwiftFlutterVkSdkPlugin: NSObject, FlutterPlugin {
         case VKAction.isLoggedIn.rawValue:
             result(VKSdk.isLoggedIn())
             break
+        case VKAction.postCall.rawValue:
+            self.postMethodCall(arguments: call.arguments, result: result)
+            break
+        case VKAction.apiCall.rawValue:
+            self.apiMethodCall(arguments: call.arguments, result: result)
+            break
         default:
             return result(FlutterMethodNotImplemented)
         }
@@ -65,10 +73,100 @@ public class SwiftFlutterVkSdkPlugin: NSObject, FlutterPlugin {
     }
 }
 
+class VKAPIRequest {
+    var method: String
+    var url: String?
+    var parameters: [String: String]
+    var retryCount: Int32?
+    
+    init(method: String, parameters: [String: String]?, retryCount: Int32? = 3) {
+        self.method = method
+        self.parameters = parameters ?? [:]
+        self.retryCount = retryCount
+    }
+    
+//    init(url: String, parameters: [String: String]?, retryCount: Int32? = 3) {
+//        self.url = url
+//        self.parameters = parameters ?? [:]
+//        self.retryCount = retryCount
+//    }
+    
+    func request(completeBlock: @escaping (_ vkResponse: VKResponse<VKApiObject>?) -> Void, errorBlock: @escaping (Error?) -> Void) {
+        let newRequest: VKRequest = VKRequest(method: self.method, parameters: self.parameters)
+        newRequest.parseModel = false
+        newRequest.requestTimeout = 25
+        if let attempts = retryCount {
+            newRequest.attempts = attempts
+        }
+        newRequest.execute(resultBlock: completeBlock, errorBlock: errorBlock)
+    }
+}
+
 extension SwiftFlutterVkSdkPlugin: VKSdkDelegate, VKSdkUIDelegate {
-    func loginVK(_ result: @escaping FlutterResult) {
+    func apiMethodCall(arguments: Any?, result: @escaping FlutterResult) {
+        guard let methodName = getArgument("method", from: arguments) as String? else {
+            return result(FlutterError(code: "VK API DELEGATE", message: "___________________ERROR: NO METHOD PASSED", details: nil))
+        }
+        print("VK API DELEGATE", "___________________METHOD: \(methodName)")
+        let args: Dictionary<String, String>? = getArgument("arguments", from: arguments)
+        let retryCount: Int32? = getArgument("retry_count", from: arguments)
+        // var skipValidation: Bool? = getArgument("skip_validation", from: arguments)
+        VKAPIRequest(method: methodName, parameters: args, retryCount: retryCount).request(
+            completeBlock: { vkResult in
+                print("VK API DELEGATE", "___________________SUCCESS: \(vkResult?.responseString)")
+                result(vkResult?.responseString ?? "")
+            },
+            errorBlock: { error in
+                // TODO : common error handler
+                print("VK API DELEGATE", "___________________ERROR: \(error.debugDescription)")
+                result(FlutterError(code: "\(methodName)_ERROR", message: error.debugDescription, details: nil))
+            }
+        )
+    }
+    func postMethodCall(arguments: Any?, result: @escaping FlutterResult) {
+        guard let url = getArgument("url", from: arguments) as String? else {
+            return print("VK API DELEGATE", "___________________NO URL PASSED")
+        }
+        print("VK API DELEGATE", "___________________POST URL: \(url)")
+        
+        let args: Dictionary<String, String>? = getArgument("arguments", from: arguments)
+        
+        guard let photo = args?["photo"] else {
+            return result(FlutterError(code: "VK API DELEGATE", message: "___________________ERROR: NO PHOTO PASSED", details: nil))
+        }
+        
+        let _image = VKUploadImage(data: try? Data(contentsOf: URL(string: photo)!), andParams: VKImageParameters.pngImage())
+        VKRequest.photoRequest(withPostUrl: url, withPhotos: [_image]).execute(
+            resultBlock: { vkResult in
+                print("VK API DELEGATE", "___________________SUCCESS: \(vkResult?.responseString)")
+                result(vkResult?.responseString ?? "")
+            },
+                errorBlock: { error in
+                // TODO : common error handler
+                print("VK API DELEGATE", "___________________ERROR: \(error.debugDescription)")
+                result(FlutterError(code: "POST_ERROR", message: error.debugDescription, details: nil))
+            }
+        )
+    }
+    
+    func getImgPath(name: String) -> UIImage?
+    {
+        let documentDirectory = FileManager.SearchPathDirectory.documentDirectory
+        let userDomainMask    = FileManager.SearchPathDomainMask.userDomainMask
+        let paths             = NSSearchPathForDirectoriesInDomains(documentDirectory, userDomainMask, true)
+        if let dirPath        = paths.first
+        {
+            let imageURL = URL(fileURLWithPath: dirPath).appendingPathComponent(name)
+            let image    = UIImage(contentsOfFile: imageURL.path)
+            return image
+        }
+        return nil
+    }
+    
+    func loginVK(_ result: @escaping FlutterResult, scope: String?) {
         self.methodChannelResult = result
-        VKSdk.wakeUpSession(self.vkScope) { state, error in
+        let _scope = scopesFromString(scope)
+        VKSdk.wakeUpSession(_scope) { state, error in
             switch state {
             case .authorized:
                 if let token = VKSdk.accessToken() {
@@ -78,7 +176,7 @@ extension SwiftFlutterVkSdkPlugin: VKSdkDelegate, VKSdkUIDelegate {
                 }
                 break
             case .initialized:
-                VKSdk.authorize(self.vkScope)
+                VKSdk.authorize(_scope)
                 break
             case .error:
                 result(FlutterError(code: "UNAVAILABLE", message: "VK login error", details: nil))
@@ -87,6 +185,12 @@ extension SwiftFlutterVkSdkPlugin: VKSdkDelegate, VKSdkUIDelegate {
                 break
             }
         }
+    }
+    
+    func scopesFromString(_ scopesStr: String?) -> [String] {
+        guard let _scopesStr = scopesStr else {return self.vkScope}
+        let arr = _scopesStr.components(separatedBy: ",")
+        return arr.map({$0.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()})
     }
     
     func authorizeVK(with token: VKAccessToken) {

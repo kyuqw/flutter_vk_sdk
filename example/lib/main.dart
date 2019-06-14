@@ -1,4 +1,4 @@
-import 'package:file_picker/file_picker.dart';
+import 'package:image_picker/image_picker.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_vk_sdk/flutter_vk_sdk.dart';
@@ -11,7 +11,7 @@ void main() {
 }
 
 initVkSdk() {
-  return FlutterVkSdk.init(appId: '5555555');
+  return FlutterVkSdk.init(appId: '7012114');
 }
 
 class MyApp extends StatefulWidget {
@@ -62,18 +62,8 @@ class _MyAppState extends State<MyApp> {
   }
 
   Future<List<String>> addAttachments(AttachmentType type) async {
-    var pickingType;
-    switch (type) {
-      case AttachmentType.photo:
-        pickingType = FileType.IMAGE;
-        break;
-      case AttachmentType.url:
-        break;
-    }
-    if (pickingType == null) return null;
-    final paths = await FilePicker.getMultiFilePath(type: pickingType);
-    if (paths == null) return null;
-    return paths.values.toList();
+    var image = await ImagePicker.pickImage(source: ImageSource.gallery);
+    return [image.path];
   }
 
   @override
@@ -92,6 +82,7 @@ class _MyAppState extends State<MyApp> {
           )
         ],
       ),
+      floatingActionButton: FloatingActionButton(onPressed: logout, child: Icon(Icons.close)),
       body: Center(
         child: Text('LoggedIn: $_value\n'),
       ),
@@ -110,5 +101,9 @@ class _MyAppState extends State<MyApp> {
     setState(() {
       _value = 'error';
     });
+  }
+
+  logout() {
+    FlutterVkSdk.logout();
   }
 }
