@@ -8,15 +8,15 @@ import io.flutter.plugin.common.MethodChannel.MethodCallHandler
 import io.flutter.plugin.common.MethodChannel.Result
 import io.flutter.plugin.common.PluginRegistry.Registrar
 
-class FlutterVkSdkPlugin : MethodCallHandler {
+class FlutterVKSdkPlugin : MethodCallHandler {
 
-  private var delegate: FlutterVkSdkDelegate
-  private var apiDelegate: FlutterVkApiDelegate
+  private var delegate: FlutterVKSdkDelegate
+  private var apiDelegate: FlutterVKApiDelegate
 
   constructor(registrar: Registrar) {
     Log.d("VK PLUGIN", "_________________________CALL CONSTRUCTOR")
-    delegate = FlutterVkSdkDelegate(registrar)
-    apiDelegate = FlutterVkApiDelegate()
+    delegate = FlutterVKSdkDelegate(registrar)
+    apiDelegate = FlutterVKApiDelegate()
   }
 
   companion object {
@@ -29,13 +29,14 @@ class FlutterVkSdkPlugin : MethodCallHandler {
     const val IS_LOGGED_IN_ACTION: String = "is_logged_in"
     const val LOGIN_ACTION: String = "login"
     const val LOGOUT_ACTION: String = "logout"
+    const val GET_ACCESS_TOKEN_ACTION: String = "get_access_token"
     const val API_ACTION: String = "api_method_call"
     const val POST_ACTION: String = "post_method_call"
 
     @JvmStatic
     fun registerWith(registrar: Registrar) {
       val channel = MethodChannel(registrar.messenger(), CHANNEL_NAME)
-      channel.setMethodCallHandler(FlutterVkSdkPlugin(registrar))
+      channel.setMethodCallHandler(FlutterVKSdkPlugin(registrar))
     }
   }
 
@@ -58,6 +59,9 @@ class FlutterVkSdkPlugin : MethodCallHandler {
       }
       IS_LOGGED_IN_ACTION -> {
         delegate.isLoggedIn(result)
+      }
+      GET_ACCESS_TOKEN_ACTION -> {
+        delegate.getCurrentAccessToken(result)
       }
       API_ACTION -> {
         val arguments = call.arguments<Map<String, Any?>>()

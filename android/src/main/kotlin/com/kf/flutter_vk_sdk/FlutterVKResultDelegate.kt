@@ -1,6 +1,8 @@
 package com.kf.flutter_vk_sdk
 
+import android.content.Context
 import android.content.Intent
+import android.content.SharedPreferences
 import android.util.Log
 
 import io.flutter.plugin.common.MethodChannel
@@ -9,15 +11,15 @@ import io.flutter.plugin.common.PluginRegistry
 import com.vk.api.sdk.auth.VKAccessToken
 import com.vk.api.sdk.auth.VKAuthCallback
 import com.vk.api.sdk.auth.VKScope
-import com.vk.api.sdk.VKApiConfig
 import com.vk.api.sdk.exceptions.VKApiExecutionException
 import com.vk.api.sdk.VK
 
-class FlutterVkSdkDelegate constructor(val registrar: PluginRegistry.Registrar) : PluginRegistry.ActivityResultListener {
+class FlutterVKSdkDelegate constructor(val registrar: PluginRegistry.Registrar) : PluginRegistry.ActivityResultListener {
   private var loginCallback: VKAuthCallback? = null
   private var pendingResult: MethodChannel.Result? = null
 
   companion object {
+    const val PREFERENCE_NAME = "com.vkontakte.android_pref_name"
     const val NEED_LOGIN_ERROR_MSG: String = "NEED_LOGIN"
     val defaultScope: Collection<VKScope> = emptySet()
   }
@@ -38,11 +40,11 @@ class FlutterVkSdkDelegate constructor(val registrar: PluginRegistry.Registrar) 
   }
 
   private fun getErrorCode(methodName: String): String {
-    return FlutterVkResults.getErrorCode(methodName)
+    return FlutterVKResults.getErrorCode(methodName)
   }
 
   private fun getCanceledCode(methodName: String): String {
-    return FlutterVkResults.getCanceledCode(methodName)
+    return FlutterVKResults.getCanceledCode(methodName)
   }
 
   private fun clearPending() {
@@ -95,13 +97,18 @@ class FlutterVkSdkDelegate constructor(val registrar: PluginRegistry.Registrar) 
     return VK.isLoggedIn()
   }
 
+  fun getCurrentAccessToken(result: MethodChannel.Result) {
+    val token = VKAccessToken.restore(getPreferences(registrar.context()))
+    result.success(FlutterVKResults.accessToken(token))
+  }
+
   fun login(scopes: String?, result: MethodChannel.Result) {
     val scopeCollection = scopesFromString(scopes)
-    val methodName = FlutterVkSdkPlugin.LOGIN_ACTION
+    val methodName = FlutterVKSdkPlugin.LOGIN_ACTION
     if (!setPendingResult(methodName, result)) return
     loginCallback = object : VKAuthCallback {
       override fun onLogin(token: VKAccessToken) {
-        finishWithResult(FlutterVkResults.successLogin(token))
+        finishWithResult(FlutterVKResults.successLogin(token))
       }
 
       override fun onLoginFailed(errorCode: Int) {
@@ -120,9 +127,11 @@ class FlutterVkSdkDelegate constructor(val registrar: PluginRegistry.Registrar) 
   fun isLoggedIn(result: MethodChannel.Result) {
     result.success(isLoggedIn())
   }
+
+  fun getPreferences(context: Context): SharedPreferences = context.getSharedPreferences(PREFERENCE_NAME, Context.MODE_PRIVATE)
 }
 
-object FlutterVkResults {
+object FlutterVKResults {
   private const val UNKNOWN_METHOD: String = "UNKNOWN"
 
   fun getErrorCode(methodName: String): String {
@@ -137,13 +146,8 @@ object FlutterVkResults {
     return "${name.toLowerCase()}_canceled"
   }
 
-  fun successLogin(token: VKAccessToken): Map<String, Any?> {
-    val accessTokenMap = accessToken(token)
-
-    return mapOf(
-        "status" to "loggedIn",
-        "accessToken" to accessTokenMap
-    )
+  fun successLogin(token: VKAccessToken): Map<String, Any?>? {
+    return accessToken(token)
   }
 
   fun error(error: VKApiExecutionException): Map<String, Any?> {
@@ -159,21 +163,8 @@ object FlutterVkResults {
     return res
   }
 
-//  fun error(error: VKError?): Map<String, String>? {
-//    if (error == null) return null
-//    when (error.errorCode) {
-//      VKError.VK_API_ERROR -> return mapOf(
-//          "status" to "error",
-//          "errorMessage" to error.errorMessage,
-//          "errorReason" to error.errorReason
-//      )
-//
-////      VKError.VK_CANCELED -> return null
-//    }
-//    return null
-//  }
-
-  fun accessToken(token: VKAccessToken): Map<String, Any?> {
+  fun accessToken(token: VKAccessToken?): Map<String, Any?>? {
+    if (token == null) return null
     return mapOf(
         "token" to token.accessToken,
         "userId" to token.userId,
@@ -181,7 +172,7 @@ object FlutterVkResults {
         "email" to token.email,
         "phone" to token.phone,
         "phoneAccessKey" to token.phoneAccessKey,
-        "created" to token.created.toString()
+        "created" to token.created
     )
   }
 }

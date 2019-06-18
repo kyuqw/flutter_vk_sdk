@@ -17,6 +17,6 @@ void main() {
 
 // TODO: write tests
 //  test('getPlatformVersion', () async {
-//    expect(await FlutterVkSdk.platformVersion, '42');
+//    expect(await FlutterVKSdk.platformVersion, '42');
 //  });
 }

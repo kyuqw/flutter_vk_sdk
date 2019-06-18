@@ -1,17 +1,17 @@
-import 'package:image_picker/image_picker.dart';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_vk_sdk/flutter_vk_sdk.dart';
 import 'package:flutter_vk_sdk/models/attachment.dart';
 import 'package:flutter_vk_sdk/vk_scope.dart';
 
+import 'package:camera_utils/camera_utils.dart';
+
 void main() {
-  initVkSdk();
+  initVKSdk();
   runApp(MaterialApp(home: MyApp()));
 }
 
-initVkSdk() {
-  return FlutterVkSdk.init(appId: '7012114');
+initVKSdk() {
+  return FlutterVKSdk.init(appId: '7012114');
 }
 
 class MyApp extends StatefulWidget {
@@ -28,15 +28,15 @@ class _MyAppState extends State<MyApp> {
   }
 
   checkLoggedIn() async {
-    var isLoggedIn = await FlutterVkSdk.isLoggedIn();
+    var isLoggedIn = await FlutterVKSdk.isLoggedIn();
     setState(() {
       _value = isLoggedIn.toString();
     });
   }
 
   void vkLogin() async {
-    FlutterVkSdk.login(
-      scope: '${VkScope.wall}, ${VkScope.photos}',
+    FlutterVKSdk.login(
+      scope: '${VKScope.wall}, ${VKScope.photos}, ${VKScope.video}',
       onSuccess: (res) {
         setState(() {
           _value = 'true';
@@ -52,7 +52,7 @@ class _MyAppState extends State<MyApp> {
   }
 
   vkShare() async {
-    FlutterVkSdk.shareWithDialog(
+    FlutterVKSdk.shareWithDialog(
       context: context,
       text: 'Some post text.\n#HASHTAG',
       addAttachments: addAttachments,
@@ -61,9 +61,18 @@ class _MyAppState extends State<MyApp> {
     );
   }
 
-  Future<List<String>> addAttachments(AttachmentType type) async {
-    var image = await ImagePicker.pickImage(source: ImageSource.gallery);
-    return [image.path];
+  Future<List<Attachment>> addAttachments(AttachmentType type) async {
+    String path;
+    String thumbnail;
+    if (type == AttachmentType.photo) {
+      path = await CameraUtils.pickImage;
+    } else if (type == AttachmentType.video) {
+      path = await CameraUtils.pickVideo;
+      if (path != null) thumbnail = await CameraUtils.getThumbnail(path);
+    }
+
+    if (path == null) return null;
+    return [Attachment(type, path, thumbnail: thumbnail)];
   }
 
   @override
@@ -104,6 +113,6 @@ class _MyAppState extends State<MyApp> {
   }
 
   logout() {
-    FlutterVkSdk.logout();
+    FlutterVKSdk.logout();
   }
 }

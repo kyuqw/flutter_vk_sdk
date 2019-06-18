@@ -1,7 +1,7 @@
 import '../vk_method_call.dart';
 
 class Wall {
-  VkApiMethodCall post({
+  VKApiMethodCall post({
     int ownerId,
     String message,
     String attachments,
@@ -10,7 +10,7 @@ class Wall {
     bool closeComments,
     bool muteNotifications,
   }) {
-    final callBuilder = VkApiMethodCall('wall.post');
+    final callBuilder = VKApiMethodCall('wall.post');
     callBuilder.setValue('owner_id', ownerId);
     callBuilder.setValue('message', message);
     callBuilder.setValue('attachments', attachments);

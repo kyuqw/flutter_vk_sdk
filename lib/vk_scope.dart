@@ -1,4 +1,4 @@
-class VkScope {
+class VKScope {
   static const String notify = 'notify';
   static final String friends = 'friends';
   static final String photos = 'photos';

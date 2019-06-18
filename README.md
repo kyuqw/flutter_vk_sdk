@@ -1,14 +1,49 @@
 # flutter_vk_sdk
 
+[![pub package](https://img.shields.io/pub/v/flutter_vk_sdk.svg)](https://pub.dev/packages/flutter_vk_sdk)
+
 Flutter vk sdk project.
 
-## Getting Started
+## Installation
 
-This project is a starting point for a Flutter
-[plug-in package](https://flutter.dev/developing-packages/),
-a specialized package that includes platform-specific implementation code for
-Android and/or iOS.
+First, add  [*`flutter_vk_sdk`*](https://pub.dev/packages/flutter_vk_sdk#-installing-tab-)  as a dependency in [your pubspec.yaml file](https://flutter.io/platform-plugins/).
 
-For help getting started with Flutter, view our 
-[online documentation](https://flutter.dev/docs), which offers tutorials, 
-samples, guidance on mobile development, and a full API reference.
+```
+flutter_vk_sdk: ^0.0.6+3
+```
+
+### Android
+
+In your android res/values create strings.xml and fill with this examples
+```xml
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <integer name="com_vk_sdk_AppId">YOUR_VK_APP_ID</integer>
+</resources>
+```
+
+### iOS
+
+```
+import UIKit
+import Flutter
+import VK_ios_sdk
+
+@UIApplicationMain
+@objc class AppDelegate: FlutterAppDelegate {
+    override func application(
+        _ application: UIApplication,
+        didFinishLaunchingWithOptions launchOptions: [UIApplicationLaunchOptionsKey: Any]?
+        ) -> Bool {
+        GeneratedPluginRegistrant.register(with: self)
+        return super.application(application, didFinishLaunchingWithOptions: launchOptions)
+    }
+    
+    override func application(_ app: UIApplication, open url: URL, options: [UIApplicationOpenURLOptionsKey : Any] = [:]) -> Bool {
+        VKSdk.processOpen(url, fromApplication: "")
+        return true
+    }
+}
+```
+
+## Dart usage

@@ -1,28 +1,29 @@
+import 'dart:io';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_vk_sdk/utils/share_utils.dart';
 
 import '../models/attachment.dart';
-import 'VkThemeData.dart';
+import 'vk_theme.dart';
 
 enum UITheme { vk, app }
 
-class VkSharePage extends StatefulWidget {
+class VKSharePage extends StatefulWidget {
   final Function onSuccess;
   final Function onError;
   final String text;
   final List<Attachment> attachments;
-  final Future<List> Function(AttachmentType) addAttachments;
+  final Future<List> Function(AttachmentType) addAttachmentsDelegate;
   final UITheme theme;
 
-  const VkSharePage({
+  const VKSharePage({
     Key key,
     this.onSuccess,
     this.onError,
     this.text,
     this.attachments,
-    this.addAttachments,
+    this.addAttachmentsDelegate,
     this.theme = UITheme.vk,
   })  : assert(onSuccess != null),
         assert(onError != null),
@@ -30,7 +31,7 @@ class VkSharePage extends StatefulWidget {
         super(key: key);
 
   @override
-  VkSharePageState createState() => VkSharePageState();
+  VKSharePageState createState() => VKSharePageState();
 
   static Future show({
     @required BuildContext context,
@@ -38,18 +39,18 @@ class VkSharePage extends StatefulWidget {
     @required Function onError,
     String text,
     List attachments,
-    Future<List> Function(AttachmentType) addAttachments,
+    Future<List> Function(AttachmentType) addAttachmentsDelegate,
     theme = UITheme.vk,
   }) {
     return Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (c) => VkSharePage(
+        builder: (c) => VKSharePage(
               onSuccess: onSuccess,
               onError: onError,
               text: text,
               attachments: attachments,
-              addAttachments: addAttachments,
+              addAttachmentsDelegate: addAttachmentsDelegate,
               theme: theme,
             ),
       ),
@@ -57,7 +58,7 @@ class VkSharePage extends StatefulWidget {
   }
 }
 
-class VkSharePageState extends State<VkSharePage> {
+class VKSharePageState extends State<VKSharePage> {
   bool isLoading = false;
   TextEditingController textCtrl;
   List<Attachment> attachments;
@@ -82,12 +83,12 @@ class VkSharePageState extends State<VkSharePage> {
       body: buildBody(context),
     );
 
-    if (widget.theme == UITheme.vk) return buildVkTheme(context, child);
+    if (widget.theme == UITheme.vk) return buildVKTheme(context, child);
     return child;
   }
 
-  Widget buildVkTheme(BuildContext context, Widget child) {
-    final themeData = VkTheme.getTheme(context);
+  Widget buildVKTheme(BuildContext context, Widget child) {
+    final themeData = VKTheme.getTheme(context);
     return Theme(data: themeData, child: child);
   }
 
@@ -155,8 +156,10 @@ class VkSharePageState extends State<VkSharePage> {
   Widget buildBottomBar(BuildContext context) {
     final theme = Theme.of(context);
     final List<Widget> children = [];
-    final image = buildAddImageButton(context);
-    if (image != null) children.add(image);
+    final imageBtn = buildAddImageButton(context);
+    if (imageBtn != null) children.add(imageBtn);
+    final videoBtn = buildAddVideoButton(context);
+    if (videoBtn != null) children.add(videoBtn);
     if (children.length == 0) return null;
     return BottomAppBar(
       child: Container(
@@ -168,8 +171,16 @@ class VkSharePageState extends State<VkSharePage> {
   }
 
   Widget buildAddImageButton(BuildContext context) {
-    if (widget.addAttachments == null) return null;
+    if (widget.addAttachmentsDelegate == null) return null;
     return AspectRatio(aspectRatio: 1, child: CustomIconButton(child: Icon(Icons.image), onTap: handleAddImageTap));
+  }
+
+  Widget buildAddVideoButton(BuildContext context) {
+    if (widget.addAttachmentsDelegate == null) return null;
+    return AspectRatio(
+      aspectRatio: 1,
+      child: CustomIconButton(child: Icon(Icons.video_library), onTap: handleAddVideoTap),
+    );
   }
 
   handleBackButtonTap() {
@@ -188,13 +199,16 @@ class VkSharePageState extends State<VkSharePage> {
     addAttachments(AttachmentType.photo);
   }
 
+  handleAddVideoTap() {
+    addAttachments(AttachmentType.video);
+  }
+
   addAttachments(AttachmentType type) async {
-    if (widget.addAttachments == null || isLoading) return;
-    final items = await widget.addAttachments(type);
+    if (widget.addAttachmentsDelegate == null || isLoading) return;
+    final items = await widget.addAttachmentsDelegate(type);
     if (items == null) return;
-    items.forEach((f) {
-      final item = Attachment(type, f);
-      if (!attachments.contains(item)) attachments.add(item);
+    items.forEach((attachment) {
+      if (!attachments.contains(attachment)) attachments.add(attachment);
     });
     setState(() {});
   }
@@ -216,11 +230,9 @@ class VkSharePageState extends State<VkSharePage> {
     if (isLoading) return;
     setLoading(true);
     final text = textCtrl.text;
-    Share().execute(
+    Share(message: text, attachments: attachments).execute(
       onSuccess: handleShareSuccess,
       onError: handleShareError,
-      message: text,
-      attachments: attachments,
     );
   }
 
@@ -304,7 +316,7 @@ class AttachmentsWidget extends StatelessWidget {
     });
     children.addAll(urls);
     return Wrap(
-      alignment: WrapAlignment.spaceAround,
+      alignment: WrapAlignment.spaceBetween,
       crossAxisAlignment: WrapCrossAlignment.center,
       children: children,
     );
@@ -324,21 +336,44 @@ class AttachmentPreview extends StatelessWidget {
     switch (item.type) {
       case AttachmentType.url:
         child = buildUrl(context);
-        break;
+        return buildItemCard(context, child);
       case AttachmentType.photo:
         child = buildPhoto(context);
+        break;
+      case AttachmentType.video:
+        child = buildVideo(context);
         break;
       default:
         break;
     }
+    return buildItemLayout(context, buildItemCard(context, child));
+  }
+
+  Widget buildItemCard(BuildContext context, Widget child) {
     return Card(
       clipBehavior: Clip.hardEdge,
-      child: Stack(
-        children: <Widget>[
-          child,
-          Positioned(right: 0.0, child: buildRemoveButton(context)),
-        ],
-      ),
+      child: child == null
+          ? null
+          : Stack(
+              children: <Widget>[
+                child,
+                Positioned(right: 0.0, child: buildRemoveButton(context)),
+              ],
+            ),
+    );
+  }
+
+  Widget buildItemLayout(BuildContext context, Widget child) {
+    return LayoutBuilder(
+      builder: (BuildContext c, BoxConstraints constraints) {
+        final screenWidth = MediaQuery.of(context).size.width;
+        final size = getMediaWidth(context, min(constraints.maxWidth, screenWidth), perRow);
+        final minSize = 80.0;
+        return Container(
+          constraints: BoxConstraints(minWidth: minSize, maxWidth: size, minHeight: minSize, maxHeight: size),
+          child: Center(child: child),
+        );
+      },
     );
   }
 
@@ -362,20 +397,24 @@ class AttachmentPreview extends StatelessWidget {
   }
 
   Widget buildPhoto(BuildContext context) {
-    final size = getMediaWidth(context, perRow);
-    final minSize = 80.0;
-    return Container(
-      constraints: BoxConstraints(minWidth: minSize, maxWidth: size, minHeight: minSize, maxHeight: size),
-      child: Image.asset(item.value, fit: BoxFit.cover),
-    );
+    final path = item.thumbnail ?? item.value;
+    return Image.asset(path, fit: BoxFit.cover);
   }
 
-  double getMediaWidth(BuildContext context, int countPerRow) {
+  Widget buildVideo(BuildContext context) {
+    final minSize = 80.0;
+    final child = item.thumbnail == null
+        ? Icon(Icons.video_library, size: minSize * 0.5)
+        : Image.asset(item.thumbnail, fit: BoxFit.cover);
+    return child;
+  }
+
+  double getMediaWidth(BuildContext context, double maxWidth, int countPerRow) {
     assert(countPerRow > 0);
 
     final theme = Theme.of(context).cardTheme;
-    final margin = theme.margin?.horizontal ?? 0.0;
-    var width = MediaQuery.of(context).size.width;
+    final margin = theme.margin?.horizontal ?? 4.0;
+    var width = maxWidth;
     width = (width - margin * countPerRow) / countPerRow;
 //    width = min(width, 180.0);
     return width;

@@ -1,10 +1,11 @@
-enum AttachmentType { photo, url }
+enum AttachmentType { photo, video, url }
 
 class Attachment {
   final AttachmentType type;
   final String value;
+  final String thumbnail;
 
-  Attachment(this.type, this.value)
+  Attachment(this.type, this.value, {this.thumbnail})
       : assert(type != null),
         assert(value != null);
 

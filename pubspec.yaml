@@ -1,6 +1,6 @@
 name: flutter_vk_sdk
 description: Flutter vk sdk project.
-version: 0.0.6+2
+version: 0.0.6+3
 authors:
 - kyuqw <kworkadr@gmail.com>
 - qqmikey <qqmikey@gmail.com>
@@ -28,7 +28,7 @@ flutter:
   # adding or updating assets for this project.
   plugin:
     androidPackage: com.kf.flutter_vk_sdk
-    pluginClass: FlutterVkSdkPlugin
+    pluginClass: FlutterVKSdkPlugin
 
   # To add assets to your plugin package, add an assets section, like this:
   # assets:

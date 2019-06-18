@@ -9,7 +9,7 @@ import com.vk.api.sdk.*
 import com.vk.api.sdk.exceptions.VKApiExecutionException
 import com.vk.api.sdk.internal.ApiCommand
 
-class FlutterVkApiDelegate {
+class FlutterVKApiDelegate {
 
   private fun finishWithResult(result: MethodChannel.Result, value: String) {
     Log.d("VK API DELEGATE", "___________________SET RESULT: $value")
@@ -17,9 +17,9 @@ class FlutterVkApiDelegate {
   }
 
   private fun finishWithError(result: MethodChannel.Result, methodName: String, error: VKApiExecutionException) {
-    val code = FlutterVkResults.getErrorCode(methodName)
+    val code = FlutterVKResults.getErrorCode(methodName)
     val message = error.errorMsg
-    val detail = FlutterVkResults.error(error)
+    val detail = FlutterVKResults.error(error)
     Log.d("VK API DELEGATE", "___________________SET ERROR: $code $message $detail")
     result.error(code, message, detail)
   }

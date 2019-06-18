@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-class VkTheme {
+class VKTheme {
   static final colors = _C();
 
   static ThemeData getTheme(BuildContext context) {

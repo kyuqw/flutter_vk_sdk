@@ -1,13 +1,13 @@
 import '../vk_method_call.dart';
 
 class Photos {
-  VkApiMethodCall getWallUploadServer({int groupId}) {
-    final callBuilder = VkApiMethodCall('photos.getWallUploadServer');
+  VKApiMethodCall getWallUploadServer({int groupId}) {
+    final callBuilder = VKApiMethodCall('photos.getWallUploadServer');
     callBuilder.setValue('group_id', groupId);
     return callBuilder;
   }
 
-  VkApiMethodCall saveWallPhoto({
+  VKApiMethodCall saveWallPhoto({
     int userId,
     int groupId,
     String photo,
@@ -17,7 +17,7 @@ class Photos {
     double longitude,
     String caption,
   }) {
-    final callBuilder = VkApiMethodCall('photos.saveWallPhoto');
+    final callBuilder = VKApiMethodCall('photos.saveWallPhoto');
     callBuilder.setValue('user_id', groupId);
     callBuilder.setValue('group_id', groupId);
     callBuilder.setValue('photo', photo);

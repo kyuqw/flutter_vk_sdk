@@ -4,13 +4,14 @@ import 'package:flutter/services.dart';
 import 'package:flutter/material.dart';
 
 import 'models/attachment.dart';
+import 'models/vk_access_token.dart';
 import 'ui/vk_share_page.dart';
 import 'vk_api/vk_api.dart';
 
-class FlutterVkSdk {
+class FlutterVKSdk {
   static final String _defaultScope = null;
   static const MethodChannel channel = const MethodChannel('com.fb.fluttervksdk/vk');
-  static final api = VkApi();
+  static final api = VKApi();
 
   static Map<String, dynamic> _cast(Map items) {
     return items?.cast<String, dynamic>();
@@ -29,9 +30,14 @@ class FlutterVkSdk {
     return await channel.invokeMethod<bool>('is_logged_in');
   }
 
+  static Future<VKAccessToken> getAccessToken() async {
+    final Map token = await channel.invokeMethod('get_access_token');
+    return VKAccessToken.fromJson(_cast(token));
+  }
+
   static Future login({
     String scope,
-    @required Function(Map<String, dynamic>) onSuccess,
+    @required Function(VKAccessToken) onSuccess,
     @required Function(PlatformException) onError,
   }) async {
     assert(onSuccess != null);
@@ -39,7 +45,7 @@ class FlutterVkSdk {
     try {
       if (scope == null || scope.isEmpty) scope = _defaultScope;
       final Map login = await channel.invokeMethod('login', {'scope': scope});
-      onSuccess(_cast(login));
+      onSuccess(VKAccessToken.fromJson(_cast(login)));
     } on PlatformException catch (e) {
       onError(e);
     }
@@ -59,13 +65,13 @@ class FlutterVkSdk {
   }) {
     assert(onSuccess != null);
     assert(onError != null);
-    return VkSharePage.show(
+    return VKSharePage.show(
       context: context,
       onSuccess: onSuccess,
       onError: onError,
       text: text,
       attachments: attachments,
-      addAttachments: addAttachments,
+      addAttachmentsDelegate: addAttachments,
     );
   }
 }

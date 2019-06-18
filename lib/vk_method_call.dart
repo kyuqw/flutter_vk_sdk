@@ -1,20 +1,20 @@
 import 'dart:collection';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
-import 'package:meta/meta.dart';
 
 import 'flutter_vk_sdk.dart';
 import 'vk_response_parser.dart';
 
-class VkMethodCall {
+class VKMethodCall {
   String _channelMethod;
   final String endpoint;
   Map<String, String> _args = {};
-  VkResponseParser parser;
+  VKResponseParser parser;
 
-  VkMethodCall(this.endpoint);
+  VKMethodCall(this.endpoint);
 
-  MethodChannel get channel => FlutterVkSdk.channel;
+  MethodChannel get channel => FlutterVKSdk.channel;
 
   UnmodifiableMapView<String, String> get args => UnmodifiableMapView(_args);
 
@@ -60,7 +60,7 @@ class VkMethodCall {
     return _args;
   }
 
-  dynamic parse(response, VkResponseParser parser) {
+  dynamic parse(response, VKResponseParser parser) {
     final p = parser ?? this.parser;
     if (p == null) return response;
     return p.parse(response);
@@ -70,13 +70,13 @@ class VkMethodCall {
     return channel.invokeMethod(getChannelMethod(), arguments);
   }
 
-  Future executeSync({VkResponseParser parser}) async {
+  Future executeSync({VKResponseParser parser}) async {
     // TODO catch errors
     final response = await callMethod(getChannelArguments());
     return parse(response, parser);
   }
 
-  execute({@required Function onSuccess, @required Function onError, VkResponseParser parser}) async {
+  execute({@required Function onSuccess, @required Function onError, VKResponseParser parser}) async {
     assert(onSuccess != null);
     assert(onError != null);
     try {
@@ -88,7 +88,7 @@ class VkMethodCall {
   }
 }
 
-class VkApiMethodCall extends VkMethodCall {
+class VKApiMethodCall extends VKMethodCall {
   final _methodStr = 'method';
   final _argumentsStr = 'arguments';
   final _retryCountStr = 'retry_count';
@@ -96,9 +96,9 @@ class VkApiMethodCall extends VkMethodCall {
   String _channelMethod = 'api_method_call';
   int retryCount = 3;
   bool skipValidation;
-  VkResponseParser parser = VkApiResponseParser();
+  VKResponseParser parser = VKApiResponseParser();
 
-  VkApiMethodCall(String method) : super(method);
+  VKApiMethodCall(String method) : super(method);
 
   @override
   Map<String, dynamic> getChannelArguments() {
@@ -110,7 +110,7 @@ class VkApiMethodCall extends VkMethodCall {
   }
 }
 
-class VkPostMethodCall extends VkMethodCall {
+class VKPostMethodCall extends VKMethodCall {
   final _urlStr = 'url';
   final _argumentsStr = 'arguments';
   final _retryCountStr = 'retry_count';
@@ -120,9 +120,9 @@ class VkPostMethodCall extends VkMethodCall {
 
   /// [timeout] request timeout in milliseconds
   int timeout;
-  VkResponseParser parser = VkApiResponseParser();
+  VKResponseParser parser = VKApiResponseParser();
 
-  VkPostMethodCall(String url) : super(url);
+  VKPostMethodCall(String url) : super(url);
 
   @override
   Map<String, dynamic> getChannelArguments() {

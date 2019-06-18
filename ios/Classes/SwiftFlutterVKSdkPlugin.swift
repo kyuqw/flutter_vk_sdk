@@ -13,13 +13,13 @@ enum VKAction: String {
     case postCall = "post_method_call"
 }
 
-public class SwiftFlutterVkSdkPlugin: NSObject, FlutterPlugin {
+public class SwiftFlutterVKSdkPlugin: NSObject, FlutterPlugin {
     private let vkScope = [VK_PER_EMAIL, VK_PER_FRIENDS, VK_PER_OFFLINE, VK_PER_WALL]
     var methodChannelResult: FlutterResult!
     
     public static func register(with registrar: FlutterPluginRegistrar) {
         let channel = FlutterMethodChannel(name: "com.fb.fluttervksdk/vk", binaryMessenger: registrar.messenger())
-        let instance = SwiftFlutterVkSdkPlugin()
+        let instance = SwiftFlutterVKSdkPlugin()
         registrar.addMethodCallDelegate(instance, channel: channel)
     }
     
@@ -102,7 +102,7 @@ class VKAPIRequest {
     }
 }
 
-extension SwiftFlutterVkSdkPlugin: VKSdkDelegate, VKSdkUIDelegate {
+extension SwiftFlutterVKSdkPlugin: VKSdkDelegate, VKSdkUIDelegate {
     func apiMethodCall(arguments: Any?, result: @escaping FlutterResult) {
         guard let methodName = getArgument("method", from: arguments) as String? else {
             return result(FlutterError(code: "VK API DELEGATE", message: "___________________ERROR: NO METHOD PASSED", details: nil))
@@ -195,14 +195,11 @@ extension SwiftFlutterVkSdkPlugin: VKSdkDelegate, VKSdkUIDelegate {
     
     func authorizeVK(with token: VKAccessToken) {
         let data: [String: Any?] = [
-            "status": true,
-            "accessToken": [
-                "token": token.accessToken,
-                "userId": token.userId,
-                "expiresIn": token.expiresIn,
-                "secret": token.secret,
-                "email": token.email
-            ]
+            "token": token.accessToken,
+            "userId": token.userId,
+            "expiresIn": token.expiresIn,
+            "secret": token.secret,
+            "email": token.email
         ]
         methodChannelResult(data)
     }

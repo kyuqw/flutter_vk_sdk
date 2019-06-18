@@ -1,10 +1,10 @@
 import 'dart:convert';
 
-abstract class VkResponseParser<T> {
+abstract class VKResponseParser<T> {
   T parse(String response);
 }
 
-class VkApiResponseParser implements VkResponseParser {
+class VKApiResponseParser implements VKResponseParser {
   final _responseKey = 'response';
 
   @override
