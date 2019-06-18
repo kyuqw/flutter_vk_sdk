@@ -1,7 +1,9 @@
 import 'dart:collection';
+import 'dart:convert' show utf8;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
+import 'package:http/http.dart' as http;
 
 import 'flutter_vk_sdk.dart';
 import 'vk_response_parser.dart';
@@ -131,5 +133,35 @@ class VKPostMethodCall extends VKMethodCall {
     if (retryCount != null) res[_retryCountStr] = retryCount;
     if (timeout != null) res[_timeoutStr] = timeout;
     return res;
+  }
+
+  @override
+  Future callMethod([arguments]) {
+    return InternalErrorRetryChainCall(this).executeAsync();
+  }
+}
+
+class InternalErrorRetryChainCall {
+  final VKPostMethodCall postCall;
+
+  InternalErrorRetryChainCall(this.postCall);
+
+  Future<String> executeAsync() async {
+    final request = http.MultipartRequest('POST', Uri.parse(postCall.getEndpoint()));
+    final args = postCall.args;
+    if (args != null) {
+      for (var item in args.entries) {
+        final path = Uri.parse(item.value).path;
+        final file = await http.MultipartFile.fromPath(item.key, path);
+        request.files.add(file);
+      }
+    }
+    Duration timeLimit;
+    if (postCall.timeout != null) timeLimit = Duration(milliseconds: postCall.timeout);
+    // TODO: cancel request on timeout
+    final response = await (timeLimit == null ? request.send() : request.send().timeout(timeLimit));
+    if (response.statusCode != 200) return null;
+    final bodyContent = await utf8.decodeStream(response.stream);
+    return bodyContent;
   }
 }

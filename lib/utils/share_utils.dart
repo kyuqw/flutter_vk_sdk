@@ -51,6 +51,8 @@ class Share {
           .execute(onSuccess: onSuccess, onError: onError);
     } on PlatformException catch (e) {
       onError(e);
+    } catch (e) {
+      onError(e);
     }
   }
 
