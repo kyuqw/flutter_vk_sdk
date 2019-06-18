@@ -196,7 +196,7 @@ extension SwiftFlutterVKSdkPlugin: VKSdkDelegate, VKSdkUIDelegate {
     func authorizeVK(with token: VKAccessToken) {
         let data: [String: Any?] = [
             "token": token.accessToken,
-            "userId": token.userId,
+            "userId": Int(token.userId),
             "expiresIn": token.expiresIn,
             "secret": token.secret,
             "email": token.email

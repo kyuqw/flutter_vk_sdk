@@ -1,39 +1,33 @@
 PODS:
-  - file_picker (0.0.1):
+  - camera_utils (0.0.1):
     - Flutter
   - Flutter (1.0.0)
   - flutter_vk_sdk (0.0.1):
     - Flutter
     - VK-ios-sdk
-  - image_picker (0.0.1):
-    - Flutter
   - VK-ios-sdk (1.4.6)
 
 DEPENDENCIES:
-  - file_picker (from `.symlinks/plugins/file_picker/ios`)
+  - camera_utils (from `.symlinks/plugins/camera_utils/ios`)
   - Flutter (from `.symlinks/flutter/ios`)
   - flutter_vk_sdk (from `.symlinks/plugins/flutter_vk_sdk/ios`)
-  - image_picker (from `.symlinks/plugins/image_picker/ios`)
 
 SPEC REPOS:
   https://github.com/CocoaPods/Specs.git:
     - VK-ios-sdk
 
 EXTERNAL SOURCES:
-  file_picker:
-    :path: ".symlinks/plugins/file_picker/ios"
+  camera_utils:
+    :path: ".symlinks/plugins/camera_utils/ios"
   Flutter:
     :path: ".symlinks/flutter/ios"
   flutter_vk_sdk:
     :path: ".symlinks/plugins/flutter_vk_sdk/ios"
-  image_picker:
-    :path: ".symlinks/plugins/image_picker/ios"
 
 SPEC CHECKSUMS:
-  file_picker: 78c3344d9b2c343bb3090c2f032b796242ebaea7
+  camera_utils: b5d2bd7da92bd60a32700bc506691ff47100e071
   Flutter: 9d0fac939486c9aba2809b7982dfdbb47a7b0296
   flutter_vk_sdk: 1d8f28dec83f1d70b5924ccd052521c6e75ec281
-  image_picker: 86b84c4fe89267356a1f17297a45b5d317ebd2e7
   VK-ios-sdk: 7fd48bc5aaa6b96c3197c1987eb6593f2ea67331
 
 PODFILE CHECKSUM: ebd43b443038e611b86ede96e613bd6033c49497
