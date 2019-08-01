@@ -19,6 +19,7 @@ class FlutterVKSdkDelegate constructor(val registrar: PluginRegistry.Registrar) 
   private var pendingResult: MethodChannel.Result? = null
 
   companion object {
+    private const val VK_APP_AUTH_CODE = 282
     const val PREFERENCE_NAME = "com.vkontakte.android_pref_name"
     const val NEED_LOGIN_ERROR_MSG: String = "NEED_LOGIN"
     val defaultScope: Collection<VKScope> = emptySet()
@@ -76,7 +77,9 @@ class FlutterVKSdkDelegate constructor(val registrar: PluginRegistry.Registrar) 
 
   override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?): Boolean {
     if (loginCallback == null) return false
-    return VK.onActivityResult(requestCode, resultCode, data, loginCallback!!)
+    var intent = data
+    if (intent == null && requestCode == VK_APP_AUTH_CODE) intent = Intent()
+    return VK.onActivityResult(requestCode, resultCode, intent, loginCallback!!)
   }
 
 //  fun initialize(appId: Int, apiVersion: String) {

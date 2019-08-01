@@ -4,12 +4,16 @@
 
 Flutter vk sdk project.
 
+This plugin is based on:
+- Android: [vk-android-sdk v2.1.0](https://github.com/VKCOM/vk-android-sdk/tree/2.1.0)
+- iOS: [vk-ios-sdk](https://github.com/VKCOM/vk-ios-sdk)
+
 ## Installation
 
 First, add  [*`flutter_vk_sdk`*](https://pub.dev/packages/flutter_vk_sdk#-installing-tab-)  as a dependency in [your pubspec.yaml file](https://flutter.io/platform-plugins/).
 
 ```
-flutter_vk_sdk: ^0.0.6+3
+flutter_vk_sdk: ^0.0.6+4
 ```
 
 ### Android
