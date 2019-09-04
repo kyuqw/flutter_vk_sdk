@@ -23,7 +23,7 @@ class FlutterVKSdkPlugin : MethodCallHandler {
     private const val CHANNEL_NAME: String = "com.fb.fluttervksdk/vk"
     const val APP_ID_ARGUMENT: String = "app_id"
     const val API_VERSION_ARGUMENT: String = "api_version"
-    const val SCOPE_ARGUMENT: String = "scope"
+    const val SCOPE_ARGUMENT: String = "email"
 
     const val INITIALIZE_ACTION: String = "initialize"
     const val IS_LOGGED_IN_ACTION: String = "is_logged_in"
