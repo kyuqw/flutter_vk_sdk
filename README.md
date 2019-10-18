@@ -28,6 +28,7 @@ In your android res/values create strings.xml and fill with this examples
 
 ### iOS
 
+* AppDelegate
 ```
 import UIKit
 import Flutter
@@ -50,7 +51,7 @@ import VK_ios_sdk
 }
 ```
 
-info.plist
+* info.plist
 ```
 <key>CFBundleURLTypes</key>
     <array>
