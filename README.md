@@ -50,4 +50,29 @@ import VK_ios_sdk
 }
 ```
 
+info.plist
+```
+<key>CFBundleURLTypes</key>
+    <array>
+        <dict>
+            <key>CFBundleTypeRole</key>
+            <string>Editor</string>
+            <key>CFBundleURLName</key>
+            <string>vk{YOUR_APP_ID}</string>
+            <key>CFBundleURLSchemes</key>
+            <array>
+                <string>vk{YOUR_APP_ID}</string>
+            </array>
+        </dict>
+    </array>
+
+
+<key>LSApplicationQueriesSchemes</key>
+<array>
+    <string>vk</string>
+    <string>vk-share</string>
+    <string>vkauthorize</string>
+</array>
+```
+
 ## Dart usage
